@@ -1,0 +1,13 @@
+{
+  "name": "esp-tflite-micro-speech-example-idf5.1.2",
+  "build": {
+    "dockerfile": "../../docker/Dockerfile",
+    "args": {
+      "IDF_TAG": "v5.1.2",
+    },
+  },
+  "overrideCommand": false,
+  "privileged": true,
+  "workspaceMount": "source=${localWorkspaceFolder},target=/esp-tflite-micro,type=bind,consistency=cached",
+  "workspaceFolder": "/esp-tflite-micro"
+}
