@@ -11,6 +11,10 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+NOTICE: This file has been modified from the original version,
+adding jinja templated variables, so the project can be used
+in code generation. A more recent i2s API from idf is also used now.
 ==============================================================================*/
 
 #include "audio_provider.h"
@@ -24,7 +28,8 @@ limitations under the License.
 #include "freertos/FreeRTOS.h"
 // clang-format on
 
-#include "driver/i2s.h"
+#include <esp_check.h>
+#include "driver/i2s_std.h"
 #include "esp_log.h"
 #include "esp_spi_flash.h"
 #include "esp_system.h"
@@ -76,52 +81,51 @@ i2s_port_t i2s_port = I2S_NUM_0; // for esp32-s3-eye
 #if NO_I2S_SUPPORT
   // nothing to be done here
 #else
-static void i2s_init(void) {
+static int i2s_init(i2s_chan_handle_t &rx_handle) {
   // Start listening for audio: MONO @ 16KHz
-  i2s_config_t i2s_config = {
-      .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
-      .sample_rate = 16000,
-      .bits_per_sample = (i2s_bits_per_sample_t) 16,
-      .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
-      .communication_format = I2S_COMM_FORMAT_I2S,
-      .intr_alloc_flags = 0,
-      .dma_buf_count = 3,
-      .dma_buf_len = 300,
-      .use_apll = false,
-      .tx_desc_auto_clear = false,
-      .fixed_mclk = -1,
+  i2s_std_config_t std_config = {
+    .clk_cfg = {
+      .sample_rate_hz = 16000,
+        .clk_src = I2S_CLK_SRC_DEFAULT,
+      .mclk_multiple = I2S_MCLK_MULTIPLE_384,
+    },
+    .slot_cfg = {
+      .data_bit_width = I2S_DATA_BIT_WIDTH_32BIT,
+      .slot_bit_width = I2S_SLOT_BIT_WIDTH_AUTO,
+      .slot_mode = I2S_SLOT_MODE_MONO,
+      .slot_mask = I2S_STD_SLOT_LEFT,
+      .ws_width = I2S_DATA_BIT_WIDTH_32BIT,  // TODO: THIS MUST BE THE SAME AS DATA BIT WIDTH
+      .ws_pol = false,
+      .bit_shift = true,
+      .left_align = true,
+      .big_endian = false,
+      .bit_order_lsb = false
+    },
+    .gpio_cfg = {
+        .mclk = {{ gpios.mclk }},
+        .bclk = {{ gpios.bclk }},
+        .ws = {{ gpios.ws }},
+        .dout = I2S_GPIO_UNUSED,
+        .din = {{ gpios.din }},
+        .invert_flags = {
+          .mclk_inv = false,
+          .bclk_inv = false,
+          .ws_inv = false,
+        }
+    }
   };
-#if CONFIG_IDF_TARGET_ESP32S3
-  i2s_pin_config_t pin_config = {
-      .bck_io_num = 41,    // IIS_SCLK
-      .ws_io_num = 42,     // IIS_LCLK
-      .data_out_num = -1,  // IIS_DSIN
-      .data_in_num = 2,   // IIS_DOUT
+  i2s_chan_config_t chan_config = {
+      .id = i2s_port,
+      .role = I2S_ROLE_MASTER,
+      .dma_desc_num = 512,
+      .dma_frame_num = 8,
+      .auto_clear = false
   };
-  i2s_config.bits_per_sample = (i2s_bits_per_sample_t) 32;
-#else
-  i2s_pin_config_t pin_config = {
-      .bck_io_num = 26,    // IIS_SCLK
-      .ws_io_num = 32,     // IIS_LCLK
-      .data_out_num = -1,  // IIS_DSIN
-      .data_in_num = 33,   // IIS_DOUT
-  };
-#endif
-
-  esp_err_t ret = 0;
-  ret = i2s_driver_install(i2s_port, &i2s_config, 0, NULL);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Error in i2s_driver_install");
-  }
-  ret = i2s_set_pin(i2s_port, &pin_config);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Error in i2s_set_pin");
-  }
-
-  ret = i2s_zero_dma_buffer(i2s_port);
-  if (ret != ESP_OK) {
-    ESP_LOGE(TAG, "Error in initializing dma buffer with 0");
-  }
+  ESP_RETURN_ON_ERROR(i2s_new_channel(&chan_config, nullptr, &rx_handle), TAG, "Couldn't create new channel");
+  ESP_RETURN_ON_ERROR(i2s_channel_init_std_mode(rx_handle, &std_config), TAG, "Couldn't init i2s mode");
+  ESP_RETURN_ON_ERROR(i2s_channel_enable(rx_handle), TAG, "Couldn't enable channel");
+  ESP_LOGI(TAG, "I2S initialized");
+  return ESP_OK;
 }
 #endif
 
@@ -130,10 +134,14 @@ static void CaptureSamples(void* arg) {
   ESP_LOGE(TAG, "i2s support not available on C3 chip for IDF < 4.4.0");
 #else
   size_t bytes_read = i2s_bytes_to_read;
-  i2s_init();
-  while (1) {
+  i2s_chan_handle_t rx_handle;
+  if (i2s_init(rx_handle) != ESP_OK) {
+    ESP_LOGE(TAG, "No i2s RX handle");
+    return;
+  }
+  while (true) {
     /* read 100ms data at once from i2s */
-    i2s_read(i2s_port, (void*)g_i2s_read_buffer, i2s_bytes_to_read,
+    i2s_channel_read(rx_handle, (void*)g_i2s_read_buffer, i2s_bytes_to_read,
              &bytes_read, pdMS_TO_TICKS(100));
 
     if (bytes_read <= 0) {
@@ -145,7 +153,7 @@ static void CaptureSamples(void* arg) {
 #if CONFIG_IDF_TARGET_ESP32S3
       // rescale the data
       for (int i = 0; i < bytes_read / 4; ++i) {
-        ((int16_t *) g_i2s_read_buffer)[i] = ((int32_t *) g_i2s_read_buffer)[i] >> 14;
+        ((int16_t *) g_i2s_read_buffer)[i] = ((int32_t *) g_i2s_read_buffer)[i] >> 16;
       }
       bytes_read = bytes_read / 2;
 #endif
