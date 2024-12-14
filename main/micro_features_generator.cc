@@ -47,7 +47,7 @@ using AudioPreprocessorOpResolver = tflite::MicroMutableOpResolver<18>;
 TfLiteStatus RegisterOps(AudioPreprocessorOpResolver& op_resolver) {
   TF_LITE_ENSURE_STATUS(op_resolver.AddReshape());
   TF_LITE_ENSURE_STATUS(op_resolver.AddCast());
-  TF_LITE_ENSURE_STATUS(op_resolver.AddStridedSlice());
+  TF_LITE_ENSURE_STATUS(op_resolver.AddSlice());
   TF_LITE_ENSURE_STATUS(op_resolver.AddConcatenation());
   TF_LITE_ENSURE_STATUS(op_resolver.AddMul());
   TF_LITE_ENSURE_STATUS(op_resolver.AddAdd());
