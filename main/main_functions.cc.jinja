@@ -15,7 +15,8 @@ limitations under the License.
 NOTICE: This file has been modified from the original version,
 adding jinja templated variables, so the project can be used
 in code generation. The main loop was also modified slightly
-to print out different info than the original.
+to print out different info than the original. Input sizes
+have been updated too.
 ==============================================================================*/
 
 #include <algorithm>
@@ -95,10 +96,12 @@ void setup() {
 
   // Get information about the memory area to use for the model's input.
   model_input = interpreter->input(0);
-  if ((model_input->dims->size != 2) || (model_input->dims->data[0] != 1) ||
-      (model_input->dims->data[1] !=
-       (kFeatureCount * kFeatureSize)) ||
-      (model_input->type != kTfLiteInt8)) {
+  if ((model_input->dims->size != 4)
+     || (model_input->dims->data[0] != 1)             // batch
+     || (model_input->dims->data[1] != kFeatureCount) // rows
+     || (model_input->dims->data[2] != kFeatureSize)  // cols
+     || (model_input->dims->data[3] != 1)             // channels
+     || (model_input->type != kTfLiteInt8)) {
     MicroPrintf("Bad input tensor parameters in model");
     return;
   }
