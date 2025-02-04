@@ -63,7 +63,7 @@ constexpr int32_t new_samples_to_get =
     (kFeatureStrideMs * (kAudioSampleFrequency / 1000));
 
 const int32_t kAudioCaptureBufferSize = 40000;
-const int32_t i2s_bytes_to_read = 3200;
+const int32_t i2s_bytes_to_read = 6400;
 
 namespace {
 int16_t g_audio_output_buffer[kMaxAudioSampleSize * 32];
@@ -190,7 +190,7 @@ static void CaptureSamples(void* arg) {
   while (true) {
     /* read 100ms data at once from i2s */
     i2s_channel_read(rx_handle, (void*)g_i2s_read_buffer, i2s_bytes_to_read,
-             &bytes_read, pdMS_TO_TICKS(100));
+             &bytes_read, 100);
 
     if (bytes_read <= 0) {
       ESP_LOGE(TAG, "Error in I2S read : %d", bytes_read);
