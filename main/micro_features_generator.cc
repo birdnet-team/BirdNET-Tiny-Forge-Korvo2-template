@@ -11,6 +11,9 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+NOTICE: updated one of the registered ops for compatibility with
+newer tflite versions
 ==============================================================================*/
 
 #include "micro_features_generator.h"
