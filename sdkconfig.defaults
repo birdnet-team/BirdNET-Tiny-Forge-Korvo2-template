@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# NOTICE: modified some of the defaults to work well with Korvo 2 board
 
 CONFIG_ESP32_DEFAULT_CPU_FREQ_MHZ=240
 CONFIG_FLASHMODE_QIO=y
