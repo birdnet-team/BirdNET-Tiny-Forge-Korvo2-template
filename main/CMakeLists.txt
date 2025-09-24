@@ -10,6 +10,7 @@ idf_component_register(
         model.cc
         ringbuf.c
         sd_card.cc
+    PRIV_REQUIRES spi_flash driver esp_timer test_data fatfs vfs
     INCLUDE_DIRS "")
 
     # Reduce the level of paranoia to be able to compile sources
