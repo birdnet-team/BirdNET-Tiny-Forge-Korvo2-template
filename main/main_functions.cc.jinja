@@ -16,7 +16,7 @@ NOTICE: This file has been modified from the original version,
 adding jinja templated variables, so the project can be used
 in code generation. The main loop was also modified slightly
 to print out different info than the original. Input sizes
-have been updated too.
+have been updated too. Unneeded code was removed.
 ==============================================================================*/
 
 #include <algorithm>
@@ -26,11 +26,9 @@ have been updated too.
 #include "main_functions.h"
 
 #include "audio_provider.h"
-#include "command_responder.h"
 #include "feature_provider.h"
 #include "micro_model_settings.h"
 #include "model.h"
-#include "recognize_commands.h"
 #include "tensorflow/lite/micro/system_setup.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/core/c/common.h"
@@ -44,7 +42,6 @@ const tflite::Model* model = nullptr;
 tflite::MicroInterpreter* interpreter = nullptr;
 TfLiteTensor* model_input = nullptr;
 FeatureProvider* feature_provider = nullptr;
-RecognizeCommands* recognizer = nullptr;
 int32_t previous_time = 0;
 
 // Create an area of memory to use for input, output, and intermediate arrays.
@@ -114,8 +111,6 @@ void setup() {
                                                  feature_buffer);
   feature_provider = &static_feature_provider;
 
-  static RecognizeCommands static_recognizer;
-  recognizer = &static_recognizer;
 
   previous_time = 0;
 }
