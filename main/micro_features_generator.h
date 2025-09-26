@@ -26,10 +26,6 @@ TfLiteStatus InitializeMicroFeatures();
 
 // Converts audio sample data into a more compact form that's appropriate for
 // feeding into a neural network.
-// TfLiteStatus GenerateMicroFeatures(const int16_t* input, int input_size,
-//                                    int output_size, int8_t* output,
-//                                    size_t* num_samples_read);
-
 TfLiteStatus GenerateFeatures(const int16_t* audio_data,
                               const size_t audio_data_size,
                               Features* features_output);

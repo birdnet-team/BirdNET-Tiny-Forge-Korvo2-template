@@ -21,7 +21,6 @@ NOTICE: This file has been modified from the original version:
 
 #include "audio_provider.h"
 
-#include <cstdlib>
 #include <cstring>
 
 // FreeRTOS.h must be included before some of the following dependencies.
@@ -64,7 +63,7 @@ constexpr int32_t new_samples_to_get =
     (kFeatureStrideMs * (kAudioSampleFrequency / 1000));
 
 const int32_t kAudioCaptureBufferSize = 40000;
-const int32_t i2s_bytes_to_read = 6400;
+const int32_t i2s_bytes_to_read = 6400;  // 4 bytes per sample: 1600 samples
 
 namespace {
 int16_t g_audio_output_buffer[kMaxAudioSampleSize * 32];
@@ -81,9 +80,6 @@ i2s_port_t i2s_port = I2S_NUM_0; // for esp32-s3-eye
 #endif
 }  // namespace
 
-#if NO_I2S_SUPPORT
-  // nothing to be done here
-#else
 
 static int es7210_codec_init() {
     ESP_LOGI(TAG, "Init I2C used to configure ES7210");
@@ -101,7 +97,7 @@ static int es7210_codec_init() {
     ESP_RETURN_ON_ERROR(i2c_driver_install(I2C_NUM_0, i2c_conf.mode, 0, 0, 0), TAG, "Failed to install I2C driver");
 
     /* Create ES7210 device handle */
-    es7210_dev_handle_t es7210_handle = NULL;
+    es7210_dev_handle_t es7210_handle = nullptr;
     es7210_i2c_config_t es7210_i2c_conf = {
         .i2c_port = I2C_NUM_0,
         .i2c_addr = 0x40
@@ -171,7 +167,7 @@ static int i2s_init(i2s_chan_handle_t &rx_handle) {
   ESP_LOGI(TAG, "I2S initialized");
   return ESP_OK;
 }
-#endif
+
 
 static void CaptureSamples(void* arg) {
   if (es7210_codec_init() != ESP_OK) {
@@ -196,13 +192,12 @@ static void CaptureSamples(void* arg) {
       if (bytes_read < i2s_bytes_to_read) {
         ESP_LOGW(TAG, "Partial I2S read");
       }
-#if CONFIG_IDF_TARGET_ESP32S3
       // rescale the data
       for (int i = 0; i < bytes_read / 4; ++i) {
-        ((int16_t *) g_i2s_read_buffer)[i] = ((int32_t *) g_i2s_read_buffer)[i] >> 16;
+        ((int16_t *) g_i2s_read_buffer)[i] = ((int32_t *) g_i2s_read_buffer)[i] >> 12;
       }
       bytes_read = bytes_read / 2;
-#endif
+
       /* write bytes read by i2s into ring buffer */
       int bytes_written = rb_write(g_audio_capture_buffer,
                                    (uint8_t*)g_i2s_read_buffer, bytes_read, pdMS_TO_TICKS(100));
@@ -220,7 +215,7 @@ static void CaptureSamples(void* arg) {
       }
     }
   }
-  vTaskDelete(NULL);
+  vTaskDelete(nullptr);
 }
 
 TfLiteStatus InitAudioRecording() {
