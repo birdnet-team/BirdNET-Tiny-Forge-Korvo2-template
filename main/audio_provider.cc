@@ -111,7 +111,7 @@ static int es7210_codec_init() {
         .i2s_format = ES7210_I2S_FMT_I2S,
         .bit_width = (es7210_i2s_bits_t)(I2S_DATA_BIT_WIDTH_32BIT),
         .mic_bias = ES7210_MIC_BIAS_2V87,
-        .mic_gain = ES7210_MIC_GAIN_30DB,
+        .mic_gain = ES7210_MIC_GAIN_33DB,
         .flags = {
             .tdm_enable = true
         }
@@ -194,8 +194,9 @@ static void CaptureSamples(void* arg) {
       }
       // rescale the data
       for (int i = 0; i < bytes_read / 4; ++i) {
-        ((int16_t *) g_i2s_read_buffer)[i] = ((int32_t *) g_i2s_read_buffer)[i] >> 12;
+        ((int16_t *) g_i2s_read_buffer)[i] = ((int32_t *) g_i2s_read_buffer)[i] >> 16;
       }
+
       bytes_read = bytes_read / 2;
 
       /* write bytes read by i2s into ring buffer */
