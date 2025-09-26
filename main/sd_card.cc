@@ -177,5 +177,42 @@ void logPredictions(float* predictions) {
   ESP_LOGD(TAG, "File size %lu/%zu", ftell(prediction_file), MAX_FILE_SIZE);
 }
 
+bool writeBytes(char* filename, const void* data, size_t size) {
+  if (filename == nullptr || data == nullptr || size == 0) {
+    ESP_LOGE(TAG, "Invalid parameters: filename=%p, data=%p, size=%zu",
+             filename, data, size);
+    return false;
+  }
+
+  FILE* file = fopen(filename, "ab");
+  if (file == nullptr) {
+    ESP_LOGE(TAG, "Failed to open file %s: %s", filename, strerror(errno));
+    return false;
+  }
+
+  size_t written = fwrite(data, 1, size, file);
+  if (written != size) {
+    ESP_LOGE(TAG, "Write incomplete: %zu/%zu bytes to %s", written, size, filename);
+    fclose(file);
+    return false;
+  }
+
+  if (fflush(file) != 0) {
+    ESP_LOGE(TAG, "Failed to flush %s: %s", filename, strerror(errno));
+    fclose(file);
+    return false;
+  }
+
+  if (fsync(fileno(file)) != 0) {
+    ESP_LOGE(TAG, "Failed to sync %s: %s", filename, strerror(errno));
+    fclose(file);
+    return false;
+  }
+
+  fclose(file);
+  ESP_LOGD(TAG, "Successfully appended %zu bytes to %s", size, filename);
+  return true;
+}
+
 
 }  // namespace sdcard
