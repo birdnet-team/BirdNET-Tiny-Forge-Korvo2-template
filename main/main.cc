@@ -12,18 +12,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/time.h>
-
-#include "esp_log.h"
-#include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "main_functions.h"
 
-void tf_main(void) {
+[[noreturn]] void tf_main() {
   setup();
   while (true) {
     loop();
@@ -31,6 +24,6 @@ void tf_main(void) {
 }
 
 extern "C" void app_main() {
-  xTaskCreate((TaskFunction_t)&tf_main, "tensorflow", 8 * 1024, NULL, 8, NULL);
-  vTaskDelete(NULL);
+  xTaskCreatePinnedToCore((TaskFunction_t)&tf_main, "tensorflow", 8 * 1024, nullptr, 8, nullptr, 1);
+  vTaskDelete(nullptr);
 }

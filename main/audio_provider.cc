@@ -231,7 +231,7 @@ TfLiteStatus InitAudioRecording() {
   }
   /* create CaptureSamples Task which will get the i2s_data from mic and fill it
    * in the ring buffer */
-  xTaskCreate(CaptureSamples, "CaptureSamples", 1024 * 4, NULL, 10, NULL);
+  xTaskCreatePinnedToCore(CaptureSamples, "CaptureSamples", 1024 * 4, nullptr, 23, nullptr, 0);
   while (!g_latest_audio_timestamp) {
     vTaskDelay(1); // one tick delay to avoid watchdog
   }

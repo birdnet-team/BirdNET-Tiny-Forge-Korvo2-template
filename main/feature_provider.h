@@ -16,7 +16,17 @@ limitations under the License.
 #ifndef TENSORFLOW_LITE_MICRO_EXAMPLES_MICRO_SPEECH_FEATURE_PROVIDER_H_
 #define TENSORFLOW_LITE_MICRO_EXAMPLES_MICRO_SPEECH_FEATURE_PROVIDER_H_
 
+#include <atomic>
+#include <functional>
 #include "tensorflow/lite/c/common.h"
+
+
+typedef std::function<TfLiteStatus(int32_t, int32_t, std::atomic<int>*)> PopulateFeatureDataFunc;
+typedef struct {
+  PopulateFeatureDataFunc populate_func;
+  std::atomic<int> *n_new_slices;
+} fp_task_params_t;
+
 
 // Binds itself to an area of memory intended to hold the input features for an
 // audio-recognition neural network model, and fills that data area with the
@@ -34,17 +44,23 @@ class FeatureProvider {
   FeatureProvider(int feature_size, int8_t* feature_data);
   ~FeatureProvider();
 
+  TfLiteStatus InitFeatureExtraction();
+  int GetNewSlicesN();
+
+ private:
+
   // Fills the feature data with information from audio inputs, and returns how
   // many feature slices were updated.
   TfLiteStatus PopulateFeatureData(int32_t last_time_in_ms, int32_t time_in_ms,
-                                   int* how_many_new_slices);
+                                   std::atomic<int>* how_many_new_slices);
 
- private:
   int feature_size_;
   int8_t* feature_data_;
   // Make sure we don't try to use cached information if this is the first call
   // into the provider.
   bool is_first_run_;
+  fp_task_params_t task_params;
+  std::atomic<int> n_new_slices;
 };
 
 #endif  // TENSORFLOW_LITE_MICRO_EXAMPLES_MICRO_SPEECH_FEATURE_PROVIDER_H_
