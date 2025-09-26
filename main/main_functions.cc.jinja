@@ -45,6 +45,7 @@ TfLiteTensor* model_input = nullptr;
 // The size of this will depend on the model you're using, and may need to be
 // determined by experimentation.
 constexpr int kTensorArenaSize = {{ tensor_arena_size }};
+constexpr float THRESHOLD = 0.5;
 uint8_t* tensor_arena;
 int8_t feature_buffer[kFeatureElementCount];
 
@@ -150,7 +151,7 @@ void loop() {
   ESP_LOGI("main", "Detected %7s, score: %.2f", kCategoryLabels[max_idx],
            static_cast<double>(max_result));
 
-  if (max_result > 0.7f) {
+  if (max_result > THRESHOLD) {
      sdcard::logPredictions(predictions);
   }
 }
